@@ -1,0 +1,68 @@
+<html>
+  <head>
+    <title>Splitter</title>
+
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone-min.js"></script>
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/dustjs-linkedin/2.6.1/dust-full.min.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+  </head>
+  <body>
+    <div id="info" class="center_arena"> BEGIN </div>
+    <br/><br/><br/><br/><br/><br/>
+    <div>
+      <div class="container-fluid">
+	<div class="row center_arena" id="arena">
+	  <!-- <div class="col-xs-4 tile">4</div> -->
+	</div>
+      </div>
+    </div>
+  </body>
+  <script id="tile-template" type="text/x-template">
+    <p class="tile-view" style="background:CYAN"> {value} </p>
+  </script>
+
+
+  <script type="text/javascript" src="meanout.js"></script>
+
+  <style>
+    .selected{
+    background: #EEE;
+    }
+
+    .unselected {
+    background: WHITE;
+    }
+
+    .center_arena {
+    width: 30%;
+    margin: auto;
+    text-align: center;
+    font-size: 36px;
+    }
+
+    .tile {
+    line-height: 100px;
+    }
+
+    .tile:hover {
+    background: #EEE;
+    cursor: pointer;
+    }
+
+
+    .tile-view {
+    display:inline-block
+    }
+  </style>
+</html>
