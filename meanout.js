@@ -4,21 +4,27 @@ var l = function(msg){
     console.log(msg);
 };
 
-
 //Load dust templates.
 (function(){
     dust.loadSource(dust.compile($("#tile-template").html(), 'tile'));
 })($);
 
 
-// Tile Model
-(function() {
-    
-    obj.Tile = Backbone.Model.extend({
-	initialize: function() {
-	    console.log("initializing tile");
-	},
+// Info Model & View
+(function(){
+    obj.Info = Backbone.Model.extend({
+	defaults: {
+	    text: ""
+	}
+    })
 
+    //TODO : Add InfoView
+})($);
+
+
+// Tile Model
+(function(){
+    obj.Tile = Backbone.Model.extend({
 	defaults: {
 	    id: 0,
 	    value: 0,
@@ -28,8 +34,8 @@ var l = function(msg){
 })($);
 
 
-// Slot Model
-(function() {
+// Slot Collection
+(function(){
     obj.Slots = Backbone.Collection.extend({
 	model: obj.Tile
     });
@@ -48,14 +54,32 @@ var l = function(msg){
 (function(){
     obj.TileView = Backbone.View.extend({
 	events: {
-	    'click .tile-view' : 'tile_clicked'
+	    'click' : 'tile_clicked',
 	},
 
+	awesome: function(){
+	    console.log('awesome');
+	},
+	
 	initialize: function(){
-	    _.bindAll(this, "render");
-	    this.model.bind('change', this.render);
+	    _.bindAll(this, 'render', 'renderValue', 'renderAppearance');
+	    this.model.bind('change:value', this.renderValue);
+	    this.model.bind('change:selected', this.renderAppearance);
 	},
 
+	renderValue: function(){
+	    console.log('rendering Value');
+	    $('.tile-view', this.el).html(this.model.get('value'));
+	},
+
+	renderAppearance: function(){
+	    console.log('rendering tile appearance');
+	    if(this.model.get('selected'))
+		$(this.el).addClass('selected').removeClass('unselected');
+	    else
+		$(this.el).addClass('unselected').removeClass('selected');
+	},
+	
 	render: function(){
 	    // var self= this;
 
@@ -64,21 +88,16 @@ var l = function(msg){
 	    // });
 	    //	    $(this.el).html("<span class='tile-view' style='background:BLACK'>" + this.model.get('value') + "</span>");
 
-	    $(this.el).addClass('col-xs-4 tile');
+	    // Initializing the ugly way until Dust.js is integrated.
+	    $(this.el).addClass('col-xs-4 tile').html("<span class='tile-view'></span>");
 	    
-	    if(this.model.get('selected'))
-	    	$(this.el).addClass('selected').removeClass('unselected');
-	    else 
-	    	$(this.el).addClass('unselected');
-
-	    $(this.el).html("<span class='tile-view'>" + this.model.get('value') + "</span>");
+	    this.renderAppearance();
+	    this.renderValue();
 	    
 	    return this;
 	},
 	
 	tile_clicked: function(){
-	    console.log(this.model.get('value'));
-
 	    // Toggle the selected state of a tile.
 	    this.model.set({
 		selected: !this.model.get('selected')
@@ -87,11 +106,37 @@ var l = function(msg){
 	    // If the tile got selected then add it to Slots Collection
 	    // else remove it from slots collection and let callbacks
 	    // handle rest of the logic.
-	    if(this.model.get('selected'))
+	    if (this.model.get('selected'))
 		obj.slots.add(this.model);
-	    else obj.slots.remove(this.model);
+	    else
+		obj.slots.remove(this.model);
 	}
     });
+})($);
+
+
+//Sum Model & View
+(function(){
+    obj.Sum = Backbone.Model.extend({
+	defaults: {
+	    sumValue: 0
+	}
+    }),
+    
+    obj.SumView = Backbone.View.extend({
+	
+	el: $('#sum'),
+	
+	initialize: function(){
+	    _.bindAll(this, 'render');
+	    this.model.bind('change', this.render);
+	    this.render();
+	},
+	
+	render: function(){
+	    $('span', this.el).html(this.model.get('sumValue'));
+	}
+    })
 })($);
 
 
@@ -104,13 +149,16 @@ var l = function(msg){
 	initialize: function(){
 	    _.bindAll(this, 'appendTile');
 
+	    // Initialize Board
 	    obj.board = new obj.Board();
 	    obj.board.bind('add', this.appendTile);
 
+	    // Initialize Slots
 	    obj.slots = new obj.Slots();
 	    obj.slots.bind('add', this.tileSelected);
-	    obj.slots.bind('remove', this.tileRemoved);
+	    obj.slots.bind('remove', this.tileUnselected);
 
+	    // Initialize all Tiles
 	    for(x=0; x<9; x++) {
 		var tile = new obj.Tile();
 		tile.set({
@@ -119,12 +167,18 @@ var l = function(msg){
 		});
 		obj.board.add(tile);
 	    }
+
+	    // INITIALIZE SUM
+	    obj.sum = new obj.Sum();
+	    var total = 0;
+	    _.each(obj.board.models, function(tile){total+=tile.get('value')});
+	    obj.sum.set({sumValue: total});
+	    new obj.SumView({model: obj.sum});
 	},
 	
 	// Called each time a new Tile(model) is added to Board(collection)
-	appendTile: function(model) {
-	    var tileview = new obj.TileView({model: model});
-	    //	    tileview.render();
+	appendTile: function(tile) {
+	    var tileview = new obj.TileView({model: tile});
 	    $("#arena").append(tileview.render().el);
 
 	},
@@ -136,48 +190,28 @@ var l = function(msg){
 		if(mean%1!=0) {
 		    $("#info").html("Only Integer allowed.");
 		} else {
-		    $("#info").html("Mean Out.");	    
+		    $("#info").html("Mean Out.");
 		    setTimeout(function(){$("#info").html("Continue...")}, 1000);
-		    console.log("// AVERAGE OUT");
+		    console.log("Average Out");
 		    obj.slots.models[0].set({value: mean});
 		    obj.slots.models[1].set({value: mean});
 		}
-		obj.slots.remove(obj.slots.models[0]);
-		obj.slots.remove(obj.slots.models[0]);
+		obj.slots.pop(); // Remove First Tile
+		obj.slots.pop(); // Remove Second Tile
 	    }
 	    else {
-		console.log("wait for one more tile");
-		$("#info").html("One Selected.");	    
+		console.log("Wait for one more tile");
+		$("#info").html("One Selected.");
 	    }
 	},
 
-	tileRemoved: function(model){
-	    console.log("Tile is removed");
-	    console.log(obj.slots);
+	// Called each time a previously selected Tile(model) is unselected and removed from Slots(collection)
+	tileUnselected: function(model){
+	    console.log("Tile removed");
 	    model.set({selected: false});
 	}
-
-	
     });
 
-    obj.board =  new obj.BoardView();
+    obj.boardView =  new obj.BoardView();
 
 })($);
-
-
-// // Info Panel View
-// (function(){
-
-//     obj.InfoView = Backbone.View.extend({
-// 	initialize: function(){
-// 	    _bindAll: (this, render);
-
-// 	},
-
-// 	render: function(){
-
-// 	}
-
-//     })
-
-// })($);
